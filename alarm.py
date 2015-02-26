@@ -2,21 +2,22 @@ import smtplib
 import mraa
 import time, threading
 
-ZONE_INPUT_PIN = 6
-RELAY_OUTPUT_PIN = 8
-ALARM_LED_PIN = 8
-ALARM_SW_PIN = 7
+ZONE_INPUT_PIN = 3
+RELAY_OUTPUT_PIN = 4
+ALARM_LED_PIN = 13
+ALARM_SW_PIN = 19
 
-def zoneInputISR():
-	print("Zone Input ISR")
+def zoneInputISR(args):
+	#print("Zone Input ISR")
 	a.UpdateZoneInputState()
 	
-def buttonISR():
+def buttonISR(args):
 	print("Button ISR")
-	if a.GetArmedState():
-		a.Disarm()
-	else:
-		a.Arm()
+	if a.button.read() == 1:
+		if a.GetArmedState():
+			a.Disarm()
+		else:
+			a.Arm()
 	
 class Alarm:
 	def __init__(self):
@@ -32,7 +33,8 @@ class Alarm:
 		self.zoneInput = mraa.Gpio(ZONE_INPUT_PIN) 
 		self.zoneInput.dir(mraa.DIR_IN)
 		self.zoneInput.isr(mraa.EDGE_BOTH, zoneInputISR, zoneInputISR)
-		
+		print("ZoneInputISRInit")
+
 		#configure led pin 
 		self.led = mraa.Gpio(ALARM_LED_PIN)
 		self.led.dir(mraa.DIR_OUT)
@@ -53,6 +55,7 @@ class Alarm:
 		print("Armed")
 		self.armed = 1
 		self.arming = 0
+		self.inputState = 0
 	
 	def Disarm(self):
 		print("Disarmed")
@@ -66,11 +69,17 @@ class Alarm:
 		threading.Timer(10, self.SetArmedState).start()
 	
 	def UpdateZoneInputState(self):
-		self.inputState = self.zoneInput.read()
+		#print("update")
+		if 0 == self.zoneInput.read():
+			self.inputState = 1
+		else:
+			self.inputState = 0
+		#print ("UpdateZoneInputState " + str(self.inputState))
 		
 	def Process(self):
 		print("Armed " + str(self.armed))
 		print("InputState " + str(self.inputState))
+		print("AlarmState " + str(self.alarmState))
 		
 		if self.armed:
 			#Toogle LED
@@ -123,6 +132,6 @@ a = Alarm()
 a.Process()
 
 
-time.sleep(500)
+#time.sleep(500)
 	
 
